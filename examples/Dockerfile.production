@@ -1,0 +1,85 @@
+# Dockerfile.production - Para producción (optimizado y seguro)
+FROM python:3.10-slim as builder
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+# Instalar dependencias de compilación
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Instalar poetry
+RUN pip install poetry==1.7.1
+RUN poetry config virtualenvs.create false
+
+# Copiar archivos de dependencias
+COPY pyproject.toml poetry.lock ./
+
+# Instalar solo dependencias de producción
+RUN poetry export -f requirements.txt --output requirements.txt --without-hashes --without dev && \
+    pip install --user --no-warn-script-location -r requirements.txt
+
+# ============================================================================
+# Runtime Stage
+# ============================================================================
+FROM python:3.10-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH=/home/appuser/.local/bin:$PATH \
+    DJANGO_SETTINGS_MODULE=myproject.settings.production
+
+# Instalar dependencias de runtime mínimas
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
+
+# Crear usuario no-root
+RUN useradd -m -u 1000 appuser
+
+# Copiar dependencias desde builder
+COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
+
+WORKDIR /app
+
+# Copiar código
+COPY --chown=appuser:appuser . .
+
+# Compilar archivos .pyc para mejor performance
+RUN python -m compileall .
+
+# Crear directorio para logs
+RUN mkdir -p /app/logs && chown appuser:appuser /app/logs
+
+# Recolectar archivos estáticos
+RUN python manage.py collectstatic --noinput || true
+
+USER appuser
+
+EXPOSE 8000
+
+# Health check más estricto para producción
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=5 \
+    CMD curl -f http://localhost:8000/health/ || exit 1
+
+# Gunicorn con configuración optimizada para producción
+CMD ["gunicorn", "myproject.wsgi:application", \
+     "--bind", "0.0.0.0:8000", \
+     "--workers", "4", \
+     "--worker-class", "sync", \
+     "--worker-tmp-dir", "/dev/shm", \
+     "--max-requests", "1000", \
+     "--max-requests-jitter", "100", \
+     "--timeout", "60", \
+     "--keep-alive", "5", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-", \
+     "--log-level", "warning", \
+     "--capture-output"]

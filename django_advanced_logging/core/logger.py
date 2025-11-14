@@ -9,6 +9,30 @@ from datetime import datetime
 from functools import wraps
 import traceback
 
+# Import formatters and filters
+from .formatters import ColoredFormatter, JSONFormatter
+from .filters import EnvironmentFilter, SensitiveDataFilter
+
+# ============================================================================
+# CONSTANTES
+# ============================================================================
+
+class LogLevel:
+    """Niveles de logging disponibles."""
+    DEBUG = logging.DEBUG      # 10
+    INFO = logging.INFO        # 20
+    WARNING = logging.WARNING  # 30
+    ERROR = logging.ERROR      # 40
+    CRITICAL = logging.CRITICAL # 50
+
+
+class Environment:
+    """Entornos de ejecución disponibles."""
+    DEVELOPMENT = "development"
+    STAGING = "staging"
+    PRODUCTION = "production"
+
+
 # ============================================================================
 # CONFIGURACIÓN DE LOGGING
 # ============================================================================

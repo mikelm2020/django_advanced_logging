@@ -1,0 +1,41 @@
+# Dockerfile.dev - Para ambiente de desarrollo (CI/CD)
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+# Instalar dependencias del sistema
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Instalar poetry
+RUN pip install poetry==1.7.1
+RUN poetry config virtualenvs.create false
+
+# Copiar archivos de dependencias
+COPY pyproject.toml poetry.lock* ./
+
+# Instalar solo dependencias de producción
+RUN poetry install --no-interaction --no-ansi --without dev
+
+# Copiar código
+COPY . .
+
+# Crear directorio para logs
+RUN mkdir -p /app/logs
+
+# Crear usuario no-root
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
+
+USER appuser
+
+EXPOSE 8000
+
+# Usar gunicorn con workers limitados para dev
+CMD ["gunicorn", "myproject.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--access-logfile", "-", "--error-logfile", "-"]

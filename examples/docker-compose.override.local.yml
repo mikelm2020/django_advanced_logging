@@ -1,0 +1,31 @@
+# docker-compose.override.local.yml
+# Para desarrollo local con hot-reload
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      # Hot-reload: montar código local
+      - ./app:/app
+      - /app/.venv  # Excluir virtualenv si existe
+    environment:
+      DJANGO_DEBUG: "True"
+      LOG_LEVEL: DEBUG
+      LOG_ENVIRONMENT: development
+      LOG_CONSOLE: "true"
+      LOG_JSON: "false"  # Texto legible en desarrollo
+      LOG_FILE: "false"   # No necesitamos archivos en local
+      POSTGRES_ENABLED: "true"
+    ports:
+      - "8000:8000"
+      - "5678:5678"  # Puerto para debugger (debugpy)
+    stdin_open: true
+    tty: true
+
+  postgres:
+    ports:
+      - "5432:5432"  # Exponer puerto para acceso local

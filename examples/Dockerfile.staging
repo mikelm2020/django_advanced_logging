@@ -1,0 +1,74 @@
+# Dockerfile.staging - Para ambiente de staging
+FROM python:3.10-slim as builder
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+# Instalar dependencias de compilación
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Instalar poetry
+RUN pip install poetry==1.7.1
+RUN poetry config virtualenvs.create false
+
+# Copiar archivos de dependencias
+COPY pyproject.toml poetry.lock* ./
+
+# Instalar dependencias
+RUN poetry export -f requirements.txt --output requirements.txt --without-hashes && \
+    pip install --user --no-warn-script-location -r requirements.txt
+
+# ============================================================================
+# Runtime Stage
+# ============================================================================
+FROM python:3.10-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH=/home/appuser/.local/bin:$PATH
+
+# Instalar dependencias de runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Crear usuario no-root
+RUN useradd -m -u 1000 appuser
+
+# Copiar dependencias desde builder
+COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
+
+WORKDIR /app
+
+# Copiar código
+COPY --chown=appuser:appuser . .
+
+# Crear directorio para logs
+RUN mkdir -p /app/logs && chown appuser:appuser /app/logs
+
+USER appuser
+
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health/ || exit 1
+
+# Gunicorn con configuración para staging
+CMD ["gunicorn", "myproject.wsgi:application", \
+     "--bind", "0.0.0.0:8000", \
+     "--workers", "4", \
+     "--worker-class", "sync", \
+     "--max-requests", "1000", \
+     "--max-requests-jitter", "100", \
+     "--timeout", "30", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-", \
+     "--log-level", "info"]

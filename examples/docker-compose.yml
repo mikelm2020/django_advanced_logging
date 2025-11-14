@@ -1,0 +1,152 @@
+# Docker Compose de ejemplo para Django con django-advanced-logging
+version: '3.8'
+
+services:
+  # ============================================================================
+  # PostgreSQL - Base de datos (Django + Logs en la misma BD)
+  # ============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: django_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password}
+      POSTGRES_DB: django_db
+      # PostgreSQL optimizations
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - django_network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Django Application
+  # ============================================================================
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: django_app
+    command: >
+      sh -c "
+        echo 'Esperando a PostgreSQL...' &&
+        while ! nc -z postgres 5432; do sleep 1; done &&
+        echo 'PostgreSQL está listo!' &&
+        python manage.py migrate &&
+        python manage.py collectstatic --noinput &&
+        gunicorn myproject.wsgi:application --bind 0.0.0.0:8000 --workers 4 --access-logfile - --error-logfile -
+      "
+    volumes:
+      - ./app:/app
+      - app_logs:/app/logs
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    environment:
+      # Django settings
+      DJANGO_SETTINGS_MODULE: myproject.settings
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-your-secret-key-change-in-production}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      
+      # Database - Django usa esta configuración
+      # django-advanced-logging usa la misma base de datos automáticamente
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres_password}@postgres:5432/django_db
+      
+      # django-advanced-logging configuration
+      LOG_NAME: ${LOG_NAME:-django_app}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_ENVIRONMENT: ${LOG_ENVIRONMENT:-production}
+      LOG_DIR: /app/logs
+      LOG_CONSOLE: "true"
+      LOG_FILE: "true"
+      LOG_JSON: ${LOG_JSON:-true}
+      
+      # PostgreSQL logging (usa la misma BD de Django)
+      POSTGRES_ENABLED: ${POSTGRES_ENABLED:-true}
+      LOG_DB_TABLE: application_logs
+      LOG_BUFFER_SIZE: ${LOG_BUFFER_SIZE:-1000}
+      LOG_BATCH_SIZE: ${LOG_BATCH_SIZE:-10}
+      LOG_FLUSH_INTERVAL: ${LOG_FLUSH_INTERVAL:-5.0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - django_network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Nginx - Reverse Proxy (Opcional)
+  # ============================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: django_nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - web
+    networks:
+      - django_network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Redis - Cache y Celery (Opcional)
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: django_redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - django_network
+    restart: unless-stopped
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  django_network:
+    driver: bridge
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  app_logs:
+    driver: local
+  static_volume:
+    driver: local
+  media_volume:
+    driver: local

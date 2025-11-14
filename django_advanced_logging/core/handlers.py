@@ -121,26 +121,38 @@ class PostgreSQLHandler(logging.Handler):
     def _initialize(self) -> None:
         """Inicializa la conexión (sin crear tabla)."""
         try:
-            # Importar psycopg2
+            # Intentar importar psycopg (psycopg3) primero, luego psycopg2
+            self.psycopg_module = None
+            self.psycopg_version = None
+
             try:
-                import psycopg2
-                self.psycopg2 = psycopg2
+                import psycopg
+                self.psycopg_module = psycopg
+                self.psycopg_version = 3
             except ImportError:
-                raise ImportError(
-                    "psycopg2 no está instalado. "
-                    "Instala con: pip install psycopg2-binary o "
-                    "poetry add psycopg2-binary"
-                )
-            
+                try:
+                    import psycopg2
+                    self.psycopg_module = psycopg2
+                    self.psycopg_version = 2
+                except ImportError:
+                    raise ImportError(
+                        "Ni psycopg ni psycopg2 están instalados. "
+                        "Instala uno de estos:\n"
+                        "  - pip install psycopg2-binary (recomendado)\n"
+                        "  - pip install psycopg (psycopg3)\n"
+                        "  - poetry add django-advanced-logging -E postgresql\n"
+                        "  - poetry add django-advanced-logging -E postgresql3"
+                    )
+
             # Conectar
             self._connect()
-            
+
             # NO crear tabla - se crea con migración de Django
             # La tabla debe existir antes de usar el handler
-            
+
             # Iniciar thread de escritura
             self._start_writer_thread()
-            
+
         except Exception as e:
             print(f"Error al inicializar PostgreSQLHandler: {e}")
             print("IMPORTANTE: Asegúrate de haber ejecutado 'python manage.py migrate' para crear la tabla de logs")
@@ -149,10 +161,16 @@ class PostgreSQLHandler(logging.Handler):
     def _connect(self) -> None:
         """Establece conexión con PostgreSQL."""
         try:
-            self.connection = self.psycopg2.connect(
+            self.connection = self.psycopg_module.connect(
                 self.config.connection_string
             )
-            self.connection.autocommit = False
+
+            # psycopg3 usa autocommit como propiedad, psycopg2 como atributo
+            if self.psycopg_version == 3:
+                self.connection.autocommit = False
+            else:  # psycopg2
+                self.connection.autocommit = False
+
             self.connected = True
         except Exception as e:
             self.connected = False

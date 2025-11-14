@@ -1,0 +1,39 @@
+# Dockerfile.local - Para desarrollo local con hot-reload
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+# Instalar dependencias del sistema
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    postgresql-client \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Instalar poetry
+RUN pip install poetry==1.7.1
+
+# Configurar poetry para no crear virtualenv
+RUN poetry config virtualenvs.create false
+
+# Copiar archivos de dependencias
+COPY pyproject.toml poetry.lock* ./
+
+# Instalar dependencias (incluye dev)
+RUN poetry install --no-interaction --no-ansi --with dev
+
+# Copiar código (se sobrescribe con volume en docker-compose)
+COPY . .
+
+# Crear directorio para logs
+RUN mkdir -p /app/logs && chmod 777 /app/logs
+
+EXPOSE 8000
+
+# Comando por defecto para desarrollo (con auto-reload)
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

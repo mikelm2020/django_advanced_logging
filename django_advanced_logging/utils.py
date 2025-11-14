@@ -8,7 +8,8 @@ el sistema de logging de forma simple.
 """
 
 from typing import Optional
-from .core.logger import LoggerManager, LogConfig, PostgreSQLConfig
+from .core.logger import LoggerManager, LogConfig
+from .core.handlers import PostgreSQLConfig
 import logging
 import os
 
