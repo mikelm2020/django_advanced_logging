@@ -11,7 +11,7 @@ import queue
 import time
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from django_advanced_logging.core.handlers import PostgreSQLConfig, PostgreSQLHandler
+from advanced_logging.core.handlers import PostgreSQLConfig, PostgreSQLHandler
 
 
 class TestPostgreSQLConfig:
@@ -80,8 +80,8 @@ class TestPostgreSQLConfig:
 class TestPostgreSQLHandler:
     """Tests para PostgreSQLHandler."""
 
-    @patch('django_advanced_logging.core.handlers.PostgreSQLHandler._connect')
-    @patch('django_advanced_logging.core.handlers.PostgreSQLHandler._start_writer_thread')
+    @patch('advanced_logging.core.handlers.PostgreSQLHandler._connect')
+    @patch('advanced_logging.core.handlers.PostgreSQLHandler._start_writer_thread')
     def test_handler_initialization(self, mock_start_thread, mock_connect, sample_postgres_config):
         """Verifica que el handler se inicialice correctamente."""
         with patch('psycopg2.connect'):

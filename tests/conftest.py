@@ -1,7 +1,7 @@
 """
-Configuración de pytest para django-advanced-logging.
+Configuracion de pytest para advanced_logging.
 
-Este módulo contiene fixtures compartidas por todos los tests.
+Este modulo contiene fixtures compartidas por todos los tests.
 """
 
 import os
@@ -45,7 +45,7 @@ def clean_logger_state():
 
 @pytest.fixture
 def mock_postgres_connection():
-    """Mock de conexión PostgreSQL."""
+    """Mock de conexion PostgreSQL."""
     mock_conn = MagicMock()
     mock_cursor = MagicMock()
     mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
@@ -55,7 +55,7 @@ def mock_postgres_connection():
 
 @pytest.fixture
 def mock_psycopg2(monkeypatch, mock_postgres_connection):
-    """Mock del módulo psycopg2."""
+    """Mock del modulo psycopg2."""
     mock_module = MagicMock()
     mock_module.connect.return_value = mock_postgres_connection
 
@@ -67,8 +67,8 @@ def mock_psycopg2(monkeypatch, mock_postgres_connection):
 
 @pytest.fixture
 def sample_log_config():
-    """Configuración de log de ejemplo para tests."""
-    from django_advanced_logging import LogConfig, LogLevel, Environment
+    """Configuracion de log de ejemplo para tests."""
+    from advanced_logging import LogConfig, LogLevel, Environment
 
     return LogConfig(
         name="test_app",
@@ -82,8 +82,8 @@ def sample_log_config():
 
 @pytest.fixture
 def sample_postgres_config():
-    """Configuración de PostgreSQL de ejemplo para tests."""
-    from django_advanced_logging import PostgreSQLConfig
+    """Configuracion de PostgreSQL de ejemplo para tests."""
+    from advanced_logging import PostgreSQLConfig
 
     return PostgreSQLConfig(
         host="localhost",
@@ -113,7 +113,7 @@ def django_user():
         first_name="Test",
         last_name="User"
     )
-    # No guardamos en BD para tests rápidos
+    # No guardamos en BD para tests rapidos
     user.id = 1
     return user
 
@@ -121,21 +121,21 @@ def django_user():
 @pytest.fixture(autouse=True)
 def reset_logger_manager():
     """Resetea el LoggerManager singleton entre tests."""
-    from django_advanced_logging.core.logger import LoggerManager
+    from advanced_logging.core.logger import LoggerManager
 
     # Limpiar instancias singleton
     LoggerManager._instances.clear()
 
     yield
 
-    # Limpiar después del test
+    # Limpiar despues del test
     LoggerManager._instances.clear()
 
 
 @pytest.fixture(autouse=True)
 def reset_global_logger_manager():
     """Resetea el logger manager global en utils."""
-    from django_advanced_logging import utils
+    from advanced_logging import utils
 
     # Guardar estado original
     original_manager = utils._logger_manager

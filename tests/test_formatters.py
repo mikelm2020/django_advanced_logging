@@ -9,7 +9,7 @@ Cubre:
 import logging
 import json
 import pytest
-from django_advanced_logging.core.formatters import ColoredFormatter, JSONFormatter
+from advanced_logging.core.formatters import ColoredFormatter, JSONFormatter
 
 
 class TestColoredFormatter:

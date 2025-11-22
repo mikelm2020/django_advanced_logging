@@ -1,12 +1,12 @@
 """
-Django settings para tests de django-advanced-logging.
+Django settings para tests de advanced_logging.
 """
 
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'test-secret-key-for-django-advanced-logging'
+SECRET_KEY = 'test-secret-key-for-advanced-logging'
 
 DEBUG = True
 
@@ -15,7 +15,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django_advanced_logging',
+    'advanced_logging',
 ]
 
 MIDDLEWARE = [
@@ -35,9 +35,9 @@ DATABASES = {
 # Deshabilitar logging por defecto de Django para tests
 LOGGING_CONFIG = None
 
-# Configuración para django-advanced-logging (nuestra app)
-# Esta será leída por DjangoAdvancedLoggingConfig.ready()
-ADVANCED_LOGGING_CONFIG = {
+# Configuracion para advanced_logging
+# Esta sera leida por AdvancedLoggingConfig.ready()
+ADVANCED_LOGGING = {
     'name': 'test_django_app',
     'level': 'DEBUG',
     'environment': 'development',
@@ -46,3 +46,5 @@ ADVANCED_LOGGING_CONFIG = {
 }
 
 USE_TZ = True
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

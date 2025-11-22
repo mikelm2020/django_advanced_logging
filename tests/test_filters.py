@@ -8,7 +8,7 @@ Cubre:
 
 import logging
 import pytest
-from django_advanced_logging.core.filters import EnvironmentFilter, SensitiveDataFilter
+from advanced_logging.core.filters import EnvironmentFilter, SensitiveDataFilter
 
 
 class TestEnvironmentFilter:

@@ -1,0 +1,13 @@
+# Advanced Logging - Dependencias
+# ================================
+
+# Requerido
+Django>=3.2,<5.0
+
+# Opcional - Para PostgreSQL Handler (instala uno de estos)
+psycopg2-binary>=2.9.0
+
+# Para desarrollo/testing
+pytest>=7.0.0
+pytest-django>=4.5.0
+pytest-cov>=4.0.0

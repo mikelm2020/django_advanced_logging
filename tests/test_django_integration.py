@@ -20,23 +20,23 @@ class TestDjangoAdvancedLoggingConfig:
 
     def test_app_config_name(self):
         """Verifica el nombre de la app."""
-        from django_advanced_logging.django.apps import DjangoAdvancedLoggingConfig
+        from advanced_logging.django.apps import DjangoAdvancedLoggingConfig
         
-        config = DjangoAdvancedLoggingConfig('django_advanced_logging', None)
+        config = DjangoAdvancedLoggingConfig('advanced_logging', None)
         
-        assert config.name == 'django_advanced_logging'
+        assert config.name == 'advanced_logging'
         assert config.verbose_name == 'Django Advanced Logging'
 
-    @patch('django_advanced_logging.utils.configure_django_logging')
+    @patch('advanced_logging.utils.configure_django_logging')
     def test_ready_initializes_logging_with_settings(self, mock_configure):
         """Verifica que ready() inicialice el logging si hay LOGGING_CONFIG."""
-        from django_advanced_logging.django.apps import DjangoAdvancedLoggingConfig
+        from advanced_logging.django.apps import DjangoAdvancedLoggingConfig
         from django.conf import settings
         
         # Asegurar que LOGGING_CONFIG exista
         assert hasattr(settings, 'LOGGING_CONFIG')
         
-        config = DjangoAdvancedLoggingConfig('django_advanced_logging', None)
+        config = DjangoAdvancedLoggingConfig('advanced_logging', None)
         
         # Simular primera llamada a ready()
         if hasattr(config, '_initialized'):
@@ -49,9 +49,9 @@ class TestDjangoAdvancedLoggingConfig:
 
     def test_ready_prevents_double_initialization(self):
         """Verifica que ready() no inicialice dos veces."""
-        from django_advanced_logging.django.apps import DjangoAdvancedLoggingConfig
+        from advanced_logging.django.apps import DjangoAdvancedLoggingConfig
         
-        config = DjangoAdvancedLoggingConfig('django_advanced_logging', None)
+        config = DjangoAdvancedLoggingConfig('advanced_logging', None)
         
         # Primera llamada
         config.ready()
@@ -60,7 +60,7 @@ class TestDjangoAdvancedLoggingConfig:
         assert hasattr(config, '_initialized')
         
         # Segunda llamada no debe hacer nada
-        with patch('django_advanced_logging.utils.configure_django_logging') as mock_configure:
+        with patch('advanced_logging.utils.configure_django_logging') as mock_configure:
             config.ready()
             mock_configure.assert_not_called()
 
@@ -75,7 +75,7 @@ class TestLoggingMiddleware:
 
     def test_middleware_logs_request(self, caplog):
         """Verifica que el middleware loggee los requests."""
-        from django_advanced_logging.django.middleware import LoggingMiddleware
+        from advanced_logging.django.middleware import LoggingMiddleware
         
         middleware = LoggingMiddleware(self.get_response)
         request = self.factory.get('/test/path/')
@@ -90,7 +90,7 @@ class TestLoggingMiddleware:
 
     def test_middleware_logs_response(self, caplog):
         """Verifica que el middleware loggee los responses."""
-        from django_advanced_logging.django.middleware import LoggingMiddleware
+        from advanced_logging.django.middleware import LoggingMiddleware
         
         middleware = LoggingMiddleware(self.get_response)
         request = self.factory.get('/test/')
@@ -105,7 +105,7 @@ class TestLoggingMiddleware:
 
     def test_middleware_measures_duration(self):
         """Verifica que el middleware mida el tiempo de respuesta."""
-        from django_advanced_logging.django.middleware import LoggingMiddleware
+        from advanced_logging.django.middleware import LoggingMiddleware
         
         # Simular respuesta lenta
         def slow_response(request):
@@ -125,7 +125,7 @@ class TestLoggingMiddleware:
 
     def test_middleware_logs_errors_with_warning(self, caplog):
         """Verifica que los códigos de error se loggeen como warning."""
-        from django_advanced_logging.django.middleware import LoggingMiddleware
+        from advanced_logging.django.middleware import LoggingMiddleware
         
         error_response = Mock(return_value=HttpResponse("Error", status=404))
         middleware = LoggingMiddleware(error_response)
@@ -139,7 +139,7 @@ class TestLoggingMiddleware:
 
     def test_middleware_logs_exceptions(self, caplog):
         """Verifica que el middleware loggee excepciones."""
-        from django_advanced_logging.django.middleware import LoggingMiddleware
+        from advanced_logging.django.middleware import LoggingMiddleware
         
         def raising_view(request):
             raise ValueError("Test exception")
@@ -157,7 +157,7 @@ class TestLoggingMiddleware:
 
     def test_middleware_extracts_client_ip(self):
         """Verifica que el middleware extraiga la IP del cliente."""
-        from django_advanced_logging.django.middleware import LoggingMiddleware
+        from advanced_logging.django.middleware import LoggingMiddleware
         
         middleware = LoggingMiddleware(self.get_response)
         request = self.factory.get('/test/')
@@ -170,7 +170,7 @@ class TestLoggingMiddleware:
 
     def test_middleware_handles_x_forwarded_for(self):
         """Verifica que el middleware maneje X-Forwarded-For."""
-        from django_advanced_logging.django.middleware import LoggingMiddleware
+        from advanced_logging.django.middleware import LoggingMiddleware
         
         middleware = LoggingMiddleware(self.get_response)
         request = self.factory.get('/test/')
@@ -192,7 +192,7 @@ class TestExternalIntegrationLoggingMiddleware:
 
     def test_middleware_only_processes_integration_endpoints(self):
         """Verifica que solo procese endpoints de integración."""
-        from django_advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
+        from advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
         
         middleware = ExternalIntegrationLoggingMiddleware(self.get_response)
         
@@ -208,7 +208,7 @@ class TestExternalIntegrationLoggingMiddleware:
 
     def test_middleware_identifies_integration_type(self):
         """Verifica que identifique correctamente el tipo de integración."""
-        from django_advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
+        from advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
         
         middleware = ExternalIntegrationLoggingMiddleware(self.get_response)
         
@@ -225,7 +225,7 @@ class TestExternalIntegrationLoggingMiddleware:
 
     def test_middleware_logs_integration_request(self, caplog):
         """Verifica que loggee requests de integración."""
-        from django_advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
+        from advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
         
         middleware = ExternalIntegrationLoggingMiddleware(self.get_response)
         request = self.factory.post('/api/erp/create/')
@@ -239,7 +239,7 @@ class TestExternalIntegrationLoggingMiddleware:
 
     def test_middleware_extracts_request_info(self):
         """Verifica que extraiga información del request."""
-        from django_advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
+        from advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
         
         middleware = ExternalIntegrationLoggingMiddleware(self.get_response)
         request = self.factory.post(
@@ -260,7 +260,7 @@ class TestExternalIntegrationLoggingMiddleware:
 
     def test_middleware_handles_webhook_requests(self):
         """Verifica el manejo de webhooks."""
-        from django_advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
+        from advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
         
         middleware = ExternalIntegrationLoggingMiddleware(self.get_response)
         request = self.factory.post(
@@ -279,7 +279,7 @@ class TestExternalIntegrationLoggingMiddleware:
 
     def test_middleware_logs_magento_requests(self, caplog):
         """Verifica el logging de requests de Magento."""
-        from django_advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
+        from advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
         
         middleware = ExternalIntegrationLoggingMiddleware(self.get_response)
         request = self.factory.post(
@@ -297,7 +297,7 @@ class TestExternalIntegrationLoggingMiddleware:
 
     def test_middleware_measures_response_time(self, caplog):
         """Verifica que mida el tiempo de respuesta."""
-        from django_advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
+        from advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
         
         middleware = ExternalIntegrationLoggingMiddleware(self.get_response)
         request = self.factory.get('/api/erp/status/')
@@ -311,7 +311,7 @@ class TestExternalIntegrationLoggingMiddleware:
 
     def test_middleware_logs_errors(self, caplog):
         """Verifica que loggee errores en integraciones."""
-        from django_advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
+        from advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
         
         def error_response(request):
             raise RuntimeError("Integration error")
@@ -329,7 +329,7 @@ class TestExternalIntegrationLoggingMiddleware:
 
     def test_middleware_extracts_magento_context(self):
         """Verifica la extracción de contexto de Magento."""
-        from django_advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
+        from advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
         import json
         
         middleware = ExternalIntegrationLoggingMiddleware(self.get_response)
@@ -359,7 +359,7 @@ class TestExternalIntegrationLoggingMiddleware:
 
     def test_middleware_get_log_level_by_status_code(self):
         """Verifica que el nivel de log sea correcto según status code."""
-        from django_advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
+        from advanced_logging.django.integrations_middleware import ExternalIntegrationLoggingMiddleware
         
         middleware = ExternalIntegrationLoggingMiddleware(self.get_response)
         
